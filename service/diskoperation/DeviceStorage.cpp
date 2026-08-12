@@ -8,7 +8,7 @@
 #include <QRegularExpression>
 #include <QScopedPointer>
 #include <QVariant>
-#ifdef HAVE_DCONFIG
+#ifdef DTKCORE_CLASS_DConfigFile
 #include <DConfig>
 #endif
 #include "utils.h"
@@ -594,7 +594,7 @@ static bool isPGUX()
 static QStringList ufsSpecVersions()
 {
     const QStringList fallback{"300", "310", "400", "410"};
-#ifdef HAVE_DCONFIG
+#ifdef DTKCORE_CLASS_DConfigFile
     QScopedPointer<Dtk::Core::DConfig> cfg(
         Dtk::Core::DConfig::create("com.deepin.diskmanager", "com.deepin.diskmanager.storage"));
     if (cfg && cfg->isValid()) {
