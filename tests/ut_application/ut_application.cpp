@@ -23,6 +23,7 @@
 #include "titlewidget.h"
 #include "unmountdialog.h"
 #include "formatedialog.h"
+#include "createlvwidget.h"
 #include "resizedialog.h"
 #include "stub.h"
 #include "stubAll.h"
@@ -355,6 +356,84 @@ TEST_F(ut_application, formatPartition)
 //    formatDialog->m_fileNameEdit->setText("一二三四五");
 
 //    formatDialog->onWipeButtonClicked();
+}
+
+class ut_createlvwidget : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        m_handler = DMDbusHandler::instance(qApp);
+        m_oldLevel = m_handler->m_curLevel;
+        m_oldVGInfo = m_handler->m_curVGInfo;
+        m_oldLVInfo = m_handler->m_curLVInfo;
+
+        constexpr int peSize = 4 * 1024 * 1024;
+
+        LVInfo existingLV;
+        existingLV.m_vgName = "vg01";
+        existingLV.m_lvName = "lv01";
+        existingLV.m_lvUuid = "existing-lv-uuid";
+
+        LVInfo unallocated;
+        unallocated.m_vgName = "vg01";
+        unallocated.m_lvLECount = 768;
+        unallocated.m_LESize = peSize;
+
+        VGInfo vgInfo;
+        vgInfo.m_vgName = "vg01";
+        vgInfo.m_vgSize = "5.00 GiB";
+        vgInfo.m_peCount = 1280;
+        vgInfo.m_PESize = peSize;
+        vgInfo.m_lvlist << existingLV << unallocated;
+
+        m_handler->m_curLevel = DMDbusHandler::VOLUMEGROUP;
+        m_handler->m_curVGInfo = vgInfo;
+        m_handler->m_curLVInfo = unallocated;
+    }
+
+    void TearDown() override
+    {
+        m_handler->m_curLevel = m_oldLevel;
+        m_handler->m_curVGInfo = m_oldVGInfo;
+        m_handler->m_curLVInfo = m_oldLVInfo;
+    }
+
+    DMDbusHandler *m_handler = nullptr;
+    int m_oldLevel = DMDbusHandler::PARTITION;
+    VGInfo m_oldVGInfo;
+    LVInfo m_oldLVInfo;
+};
+
+TEST_F(ut_createlvwidget, keepAddedNameWhenNoSpaceRemains)
+{
+    Stub stub;
+    stub.set(ADDR(DMDbusHandler, getAllSupportFileSystem), getAllSupportFileSystem);
+
+    CreateLVWidget widget;
+    EXPECT_EQ(QString("lv02"), widget.m_partNameEdit->text());
+
+    widget.onAddPartition();
+
+    ASSERT_EQ(1, widget.m_patrinfo.size());
+    EXPECT_FALSE(widget.m_isExceed);
+    EXPECT_EQ(QString("lv02"), widget.m_patrinfo.constLast().m_lvName);
+    EXPECT_EQ(QString("lv02"), widget.m_partNameEdit->text());
+}
+
+TEST_F(ut_createlvwidget, showNextNameWhenSpaceRemains)
+{
+    Stub stub;
+    stub.set(ADDR(DMDbusHandler, getAllSupportFileSystem), getAllSupportFileSystem);
+
+    CreateLVWidget widget;
+    widget.m_partSizeEdit->setText("1");
+    widget.onAddPartition();
+
+    ASSERT_EQ(1, widget.m_patrinfo.size());
+    EXPECT_TRUE(widget.m_isExceed);
+    EXPECT_EQ(QString("lv02"), widget.m_patrinfo.constLast().m_lvName);
+    EXPECT_EQ(QString("lv03"), widget.m_partNameEdit->text());
 }
 
 TEST_F(ut_application, newPartition)
@@ -1274,6 +1353,4 @@ TEST_F(ut_application, titleWidget_resize)
 
     titleWidget->showResizeInfoWidget();
 }
-
-
 

@@ -513,7 +513,13 @@ void CreateLVWidget::setSelectUnallocatesSpace()
 
 void CreateLVWidget::setAddOrRemResult(const bool &isExceed)
 {
-    m_partNameEdit->setText(lvName());
+    if (isExceed || m_patrinfo.isEmpty()) {
+        m_partNameEdit->setText(lvName());
+    } else {
+        // 没有空间继续创建LV时，显示实际待创建的名称，
+        // 避免展示已禁用且不会创建的下一候选名称。
+        m_partNameEdit->setText(m_patrinfo.constLast().m_lvName);
+    }
     m_partSizeEdit->setText("");
 
     if (m_sizeInfo.size() == 0) {
