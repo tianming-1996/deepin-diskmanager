@@ -19,7 +19,7 @@ namespace DiskManager {
 
 DeviceStorage::DeviceStorage()
     : m_model(""), m_vendor(""), m_mediaType(""), m_size(""), m_rotationRate(""), m_interface("")
-    , m_serialNumber(""), m_version(""), m_capabilities(""), m_description(""), m_KeyToLshw(""), m_KeyFromStorage("")
+    , m_serialNumber(""), m_version(""), m_capabilities(""), m_partTableType(""), m_description(""), m_KeyToLshw(""), m_KeyFromStorage("")
 {
 
 }
@@ -571,6 +571,59 @@ QString DeviceStorage::getDiskInfoMediaType(const QString &devicePath)
     } else {
         return "UnKnow";
     }
+}
+
+QString DeviceStorage::getDiskInfoPartTableType(const QString &devicePath)
+{
+    // lsblk -d -o name,pttype:获取整盘分区表类型(如 gpt/dos),未分区时输出为空
+    QString cmd = QString("lsblk -d -o name,pttype %1").arg(devicePath);
+    QProcess proc;
+    proc.start(cmd);
+    proc.waitForFinished(-1);
+
+    QMap<QString, QString> mapInfo;
+    loadLsblkInfo(proc.readAllStandardOutput(), mapInfo);
+
+    if (mapInfo.size() == 1) {
+        return mapInfo.value(mapInfo.firstKey());
+    }
+
+    return QString();
+}
+
+QString DeviceStorage::cleanCapabilitiesForDisplay(const QString &caps, const QString &partTableType)
+{
+    if (caps.isEmpty())
+        return caps;
+
+    QStringList tokens = caps.split(" ", QString::SkipEmptyParts);
+    bool hasPartitionedScheme = false;
+    foreach (const QString &t, tokens) {
+        if (t.startsWith("partitioned:")) {
+            hasPartitionedScheme = true;
+            break;
+        }
+    }
+
+    QStringList result;
+    foreach (const QString &t, tokens) {
+        // 当存在带值的 partitioned:<scheme> 时,跳过冗余的裸 partitioned
+        if (hasPartitionedScheme && t == "partitioned")
+            continue;
+
+        if (!partTableType.isEmpty() && t.startsWith("partitioned:")) {
+            result.append("partitioned:" + partTableType);
+            continue;
+        }
+
+        if (!partTableType.isEmpty() && !hasPartitionedScheme && t == "partitioned") {
+            result.append("partitioned:" + partTableType);
+            continue;
+        }
+
+        result.append(t);
+    }
+    return result.join(" ");
 }
 
 static bool isPGUX()

@@ -137,6 +137,8 @@ HardDiskInfo PartedCore::getDeviceHardInfo(const QString &devicepath)
 
     device.getDiskInfoFromLsblk(devicepath);
 
+    device.m_partTableType = device.getDiskInfoPartTableType(devicepath);
+
     device.getDiskInfoFromSmartCtl(devicepath);
 
     device.m_mediaType = device.getDiskInfoMediaType(devicepath);
@@ -155,7 +157,7 @@ HardDiskInfo PartedCore::getDeviceHardInfo(const QString &devicepath)
     hdinfo.m_interface = device.m_interface;
     hdinfo.m_serialNumber = device.m_serialNumber;
     hdinfo.m_version = device.m_version;
-    hdinfo.m_capabilities = device.m_capabilities;
+    hdinfo.m_capabilities = DeviceStorage::cleanCapabilitiesForDisplay(device.m_capabilities, device.m_partTableType);
     hdinfo.m_description = device.m_description;
     hdinfo.m_powerOnHours = device.m_powerOnHours;
     hdinfo.m_powerCycleCount = device.m_powerCycleCount;

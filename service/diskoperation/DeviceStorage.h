@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2022-2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -31,11 +31,21 @@ public:
     /**@brief:获取当前磁盘介质信息*/
     QString getDiskInfoMediaType(const QString &devicePath);
 
+    /**@brief:获取当前磁盘分区表类型(lsblk pttype,如 gpt/dos),未分区时为空*/
+    QString getDiskInfoPartTableType(const QString &devicePath);
+
     /**@brief:获取当前磁盘接口信息*/
     void getDiskInfoInterface(const QString &devicePath, QString &interface, QString &model);
 
     /**@brief:为HW设备更新信息*/
     void updateForHWDevice(const QString &devicePath);
+
+    /**@brief:清洗 capabilities 用于显示
+     *        当存在 lsblk pttype 时用其修正 partitioned:<scheme>,并移除冗余的裸 partitioned
+     * @param caps:hardware detection capabilities 原文
+     * @param partTableType:lsblk pttype 获取的分区表类型
+     * @return 清洗后的显示串(不改成员原值)*/
+    static QString cleanCapabilitiesForDisplay(const QString &caps, const QString &partTableType = QString());
 
 
 private:
@@ -82,6 +92,7 @@ public:
     QString               m_serialNumber;       //<! 【序列号】7
     QString               m_version;            //<! 【版本】
     QString               m_capabilities;       //<! 【功能】
+    QString               m_partTableType;      //<! 【分区表类型】(来自 lsblk pttype)
     QString               m_description;        //<! 【描述】
     QString               m_powerOnHours;       //<! 【通电时间】9
     QString               m_powerCycleCount;    //<! 【通电次数】10
